@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload — Measles Sentinel</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- Scripts in <head> so they are ready before any module code runs -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js"></script>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<nav class="navbar">
+  <a href="/" class="nav-brand"><div class="brand-icon">🧬</div> MEASLES SENTINEL</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">📊 Dashboard</a>
+    <a href="/symptoms" class="nav-link">📋 Symptoms</a>
+    <a href="/upload" class="nav-link active">📷 Scan</a>
+    <a href="/history" class="nav-link">🕒 History</a>
+  </div>
+  <div class="nav-actions">
+    <button class="icon-btn" id="themeBtn">☀️</button>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="section" style="max-width:760px;">
+    <div class="disclaimer animate-in" style="margin-bottom:24px;">
+      ⚠️ AI-assisted screening only. Consult a healthcare professional.
+    </div>
+
+    <div class="section-title animate-in">Upload Image for AI Scan</div>
+    <div class="section-sub animate-in">Upload a clear photo of the affected skin area</div>
+
+    <!-- ERROR BANNER -->
+    <div id="modelError" style="display:none; margin-bottom:16px; padding:14px 18px;
+      background:rgba(255,71,87,0.12); border:1px solid rgba(255,71,87,0.35);
+      border-radius:10px; color:#ff4757; font-size:0.875rem; line-height:1.7;">
+      <strong>⚠️ Error:</strong> <span id="modelErrorText"></span><br/>
+      <span style="font-size:0.8rem; opacity:0.8;">
+        Check browser console (F12) for details.
+        Make sure <code>static/model/model.json</code>, <code>metadata.json</code>
+        and <code>weights.bin</code> all exist.
+      </span>
+    </div>
+
+    <!-- UPLOAD ZONE -->
+    <div id="uploadArea" class="animate-in delay-1">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="fileInput" accept="image/*" />
+        <div class="upload-icon">📷</div>
+        <div class="upload-title">Drop image here or click to browse</div>
+        <div class="upload-sub">PNG, JPG, WEBP — max 10MB</div>
+        <div style="margin-top:16px; display:flex; gap:10px; justify-content:center;">
+          <span class="badge badge-primary">TensorFlow.js</span>
+          <span class="badge badge-primary">Teachable Machine</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMAGE PREVIEW -->
+    <div id="imagePreview" style="display:none; margin-top:24px;" class="animate-in">
+      <div class="image-preview glass-card" style="overflow:hidden;">
+        <img id="previewImg" src="" alt="Preview"
+          style="width:100%; max-height:380px; object-fit:cover; display:block;" />
+        <div class="image-preview-overlay">
+          <div style="font-size:0.8rem; font-weight:600; color:#fff;">📷 Ready for analysis</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:12px; margin-top:16px;">
+        <button class="btn btn-secondary" id="changeImage">🔄 Change Image</button>
+        <button class="btn btn-primary" id="analyzeBtn" disabled style="flex:1;">
+          <span id="analyzeBtnText">🔬 Analyze Image</span>
+          <span class="loading-spinner" id="analyzeSpinner" style="display:none;"></span>
+        </button>
+      </div>
+
+      <!-- STATUS LINE -->
+      <div id="statusBox" style="display:none; margin-top:12px; padding:10px 14px;
+        background:var(--glass); border:1px solid var(--glass-border); border-radius:10px;
+        font-size:0.82rem; color:var(--text-secondary);">
+        <span id="statusText"></span>
+      </div>
+    </div>
+
+    <!-- GUIDELINES -->
+    <div class="glass-card animate-in delay-2" style="padding:24px; margin-top:24px;">
+      <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px;
+        color:var(--text-secondary); margin-bottom:16px;">📌 Photo Guidelines</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:var(--success);">✅</span>
+          <span style="font-size:0.875rem;">Good lighting, clear focus</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:var(--success);">✅</span>
+          <span style="font-size:0.875rem;">Rash clearly visible</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:var(--success);">✅</span>
+          <span style="font-size:0.875rem;">Close-up of affected area</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:var(--danger);">❌</span>
+          <span style="font-size:0.875rem;">Blurry or dark photos</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:var(--danger);">❌</span>
+          <span style="font-size:0.875rem;">Covered or obstructed rash</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <span style="color:var(--danger);">❌</span>
+          <span style="font-size:0.875rem;">Filtered/edited images</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import { loadModel, predictImage, getRiskLevel, getGuidance } from '/static/js/ai-model.js';
+import { onAuthChange, uploadImage, saveScan, getCurrentUser } from '/static/js/firebase-config.js';
+import { showToast } from '/static/js/main.js';
+
+// ─── State ────────────────────────────────────────────────────────────────────
+let currentFile = null;
+let imageDataURL = null;  // store as data URL, not object URL (survives page stays)
+let analyzing   = false;  // guard against double-clicks
+
+// ─── Elements ─────────────────────────────────────────────────────────────────
+const zone        = document.getElementById('uploadZone');
+const fileInput   = document.getElementById('fileInput');
+const uploadArea  = document.getElementById('uploadArea');
+const preview     = document.getElementById('imagePreview');
+const previewImg  = document.getElementById('previewImg');
+const analyzeBtn  = document.getElementById('analyzeBtn');
+const btnText     = document.getElementById('analyzeBtnText');
+const spinner     = document.getElementById('analyzeSpinner');
+const statusBox   = document.getElementById('statusBox');
+const statusText  = document.getElementById('statusText');
+const errorBanner = document.getElementById('modelError');
+const errorText   = document.getElementById('modelErrorText');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setStatus(msg) { statusBox.style.display = 'block'; statusText.textContent = msg; }
+function clearStatus()  { statusBox.style.display = 'none'; }
+function showError(msg) { errorText.textContent = msg; errorBanner.style.display = 'block'; }
+function clearError()   { errorBanner.style.display = 'none'; }
+
+function resetUI(label = '🔬 Analyze Image') {
+  analyzing = false;
+  analyzeBtn.disabled = false;
+  spinner.style.display = 'none';
+  btnText.textContent = label;
+  clearStatus();
+}
+
+// ─── File handling ─────────────────────────────────────────────────────────────
+zone.addEventListener('click', () => fileInput.click());
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) { showToast('Please upload an image file.', 'error'); return; }
+  if (file.size > 10 * 1024 * 1024) { showToast('File too large. Max 10MB.', 'error'); return; }
+
+  currentFile = file;
+  clearError();
+
+  // Use FileReader → data URL so the image survives without needing an object URL
+  const reader = new FileReader();
+  reader.onload = ev => {
+    imageDataURL = ev.target.result;
+    previewImg.src = imageDataURL;
+    // Wait for image to decode before enabling button
+    previewImg.onload = () => {
+      analyzeBtn.disabled = false;
+      showToast('Image ready. Click Analyze.', 'success');
+    };
+    preview.style.display = 'block';
+    uploadArea.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+document.getElementById('changeImage').addEventListener('click', () => {
+  // Full reset so the next scan starts fresh
+  currentFile  = null;
+  imageDataURL = null;
+  previewImg.src = '';
+  fileInput.value = '';
+  preview.style.display   = 'none';
+  uploadArea.style.display = 'block';
+  analyzeBtn.disabled = true;
+  clearError();
+  clearStatus();
+});
+
+// ─── ANALYZE ──────────────────────────────────────────────────────────────────
+analyzeBtn.addEventListener('click', async () => {
+  if (analyzing || !currentFile || !imageDataURL) return;
+  analyzing = true;
+  analyzeBtn.disabled = true;
+  spinner.style.display = 'inline-block';
+  clearError();
+
+  try {
+    // 1. Persist image for scanning/report pages
+    sessionStorage.setItem('ms-imageURL',   imageDataURL);
+    sessionStorage.setItem('ms-imageName',  currentFile.name);
+
+    // 2. Load model (cached after first load — instant on repeat)
+    btnText.textContent = 'Loading model...';
+    setStatus('⏳ Loading TensorFlow.js model — takes ~5–10s on first run...');
+    await loadModel();
+
+    // 3. Ensure the <img> element is fully decoded before prediction
+    //    This is critical — predicting on a half-loaded image causes hangs
+    btnText.textContent = 'Analyzing...';
+    setStatus('🔬 Running AI inference...');
+
+    await new Promise((resolve, reject) => {
+      if (previewImg.complete && previewImg.naturalWidth > 0) {
+        resolve(); return;
+      }
+      previewImg.onload  = resolve;
+      previewImg.onerror = () => reject(new Error('Image failed to decode for AI input.'));
+      // Fallback timeout — if onload never fires
+      setTimeout(resolve, 3000);
+    });
+
+    // 4. Run prediction — tf.tidy() inside predictImage handles tensor cleanup
+    const results = await predictImage(previewImg);
+
+    // 5. Build result object
+    setStatus('📊 Building report...');
+    const top      = results[0];
+    const risk     = getRiskLevel(top);
+    const guidance = getGuidance(top.className);
+    const symptoms = JSON.parse(sessionStorage.getItem('ms-symptoms') || '[]');
+
+    const scanData = {
+      condition:   top.className,
+      confidence:  top.confidence,
+      risk:        risk.level,
+      guidance,
+      predictions: results,
+      symptoms,
+      imageURL:    imageDataURL,
+      imageName:   currentFile.name
+    };
+    sessionStorage.setItem('ms-scanResult', JSON.stringify(scanData));
+
+    // 6. Optional cloud save (non-blocking, won't stall navigation)
+    const user = getCurrentUser();
+    if (user && localStorage.getItem('ms-autosave') !== 'false') {
+      (async () => {
+        try {
+          const url = await uploadImage(user.uid, currentFile);
+          await saveScan(user.uid, { ...scanData, imageURL: url });
+        } catch (e) {
+          console.warn('[Upload] Cloud save skipped:', e.message);
+        }
+      })();
+    }
+
+    // 7. Navigate — scanning.html is purely an animation, result is already saved
+    setStatus('✅ Done! Opening report...');
+    await new Promise(r => setTimeout(r, 300));
+    window.location.href = '/scanning';
+
+  } catch (err) {
+    console.error('[Analyze error]', err);
+    showError(err.message);
+    showToast('Analysis failed — see error above.', 'error');
+    resetUI('🔬 Retry Analysis');
+  }
+});
+</script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

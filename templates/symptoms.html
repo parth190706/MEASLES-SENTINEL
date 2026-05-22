@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Symptom Checker — Measles Sentinel</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<nav class="navbar">
+  <a href="/" class="nav-brand"><div class="brand-icon">🧬</div> MEASLES SENTINEL</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">📊 Dashboard</a>
+    <a href="/symptoms" class="nav-link active">📋 Symptoms</a>
+    <a href="/upload" class="nav-link">📷 Scan</a>
+    <a href="/history" class="nav-link">🕒 History</a>
+  </div>
+  <div class="nav-actions">
+    <button class="icon-btn" id="themeBtn">☀️</button>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="section">
+    <div class="disclaimer animate-in" style="margin-bottom:24px;">
+      ⚠️ AI-assisted screening only. Consult a healthcare professional.
+    </div>
+
+    <div class="section-title animate-in">Symptom Checker</div>
+    <div class="section-sub animate-in">Select all symptoms you are currently experiencing</div>
+
+    <div class="grid-2">
+      <!-- SYMPTOM LIST -->
+      <div>
+        <!-- Measles Symptoms -->
+        <div class="glass-card animate-in delay-1" style="padding:24px; margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Measles Indicators</h3>
+            <span class="badge badge-danger">High Alert</span>
+          </div>
+          <div id="measlesSymptoms">
+            <div class="symptom-item" data-condition="measles">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Koplik's Spots</div><div class="symptom-desc">White spots inside the mouth</div></div>
+            </div>
+            <div class="symptom-item" data-condition="measles">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Red blotchy rash</div><div class="symptom-desc">Starts on face, spreads downward</div></div>
+            </div>
+            <div class="symptom-item" data-condition="measles">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">High fever (>40°C)</div><div class="symptom-desc">Often above 104°F</div></div>
+            </div>
+            <div class="symptom-item" data-condition="measles">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Cough &amp; runny nose</div><div class="symptom-desc">Persistent, worsening cough</div></div>
+            </div>
+            <div class="symptom-item" data-condition="measles">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Red watery eyes</div><div class="symptom-desc">Conjunctivitis / photosensitivity</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monkeypox Symptoms -->
+        <div class="glass-card animate-in delay-2" style="padding:24px; margin-bottom:20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Monkeypox Indicators</h3>
+            <span class="badge badge-warning">Moderate Alert</span>
+          </div>
+          <div id="monkeypoxSymptoms">
+            <div class="symptom-item" data-condition="monkeypox">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Raised fluid-filled blisters</div><div class="symptom-desc">Lesions on skin surface</div></div>
+            </div>
+            <div class="symptom-item" data-condition="monkeypox">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Swollen lymph nodes</div><div class="symptom-desc">Neck, armpits, groin</div></div>
+            </div>
+            <div class="symptom-item" data-condition="monkeypox">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Fever &amp; chills</div><div class="symptom-desc">Sudden onset fever</div></div>
+            </div>
+            <div class="symptom-item" data-condition="monkeypox">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Muscle aches</div><div class="symptom-desc">Body pain, backache</div></div>
+            </div>
+            <div class="symptom-item" data-condition="monkeypox">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Rash on palms/soles</div><div class="symptom-desc">Characteristic distribution</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- General Symptoms -->
+        <div class="glass-card animate-in delay-3" style="padding:24px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">General Symptoms</h3>
+            <span class="badge badge-primary">Common</span>
+          </div>
+          <div>
+            <div class="symptom-item" data-condition="general">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Fatigue / weakness</div><div class="symptom-desc">Unusual tiredness</div></div>
+            </div>
+            <div class="symptom-item" data-condition="general">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Headache</div><div class="symptom-desc">Persistent head pain</div></div>
+            </div>
+            <div class="symptom-item" data-condition="general">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Loss of appetite</div><div class="symptom-desc">Reduced desire to eat</div></div>
+            </div>
+            <div class="symptom-item" data-condition="general">
+              <div class="symptom-checkbox"></div>
+              <div><div class="symptom-name">Itching / burning skin</div><div class="symptom-desc">Skin discomfort</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SCORE PANEL -->
+      <div>
+        <div class="glass-card animate-in delay-1" style="padding:28px; position:sticky; top:80px;">
+          <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:20px;">Symptom Score</h3>
+
+          <div style="text-align:center; margin-bottom:28px;">
+            <div style="font-size:3rem; font-weight:800; color:var(--primary);" id="symptomScore">0/14</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">symptoms selected</div>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.8rem;">
+              <span>Risk Level</span>
+              <span id="symptomRisk" class="badge badge-success">Low</span>
+            </div>
+            <div class="confidence-track">
+              <div class="confidence-fill" id="symptomScoreFill" style="width:0%; background: linear-gradient(90deg, var(--success), var(--warning), var(--danger));"></div>
+            </div>
+          </div>
+
+          <div id="symptomBreakdown" style="margin-bottom:24px;">
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--glass-border); font-size:0.875rem;">
+              <span>Measles indicators</span>
+              <span id="measlesSel" style="color:var(--danger); font-weight:700;">0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--glass-border); font-size:0.875rem;">
+              <span>Monkeypox indicators</span>
+              <span id="monkeypoxSel" style="color:var(--warning); font-weight:700;">0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:8px 0; font-size:0.875rem;">
+              <span>General symptoms</span>
+              <span id="generalSel" style="color:var(--primary); font-weight:700;">0</span>
+            </div>
+          </div>
+
+          <div id="symptomAdvice" class="disclaimer" style="margin-bottom:20px; display:none;"></div>
+
+          <a href="/upload" class="btn btn-primary btn-block" id="proceedToScan">
+            📷 Proceed to Image Scan →
+          </a>
+          <button class="btn btn-secondary btn-block" style="margin-top:10px;" id="clearSymptoms">Clear All</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import { showToast } from '/static/js/main.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+  const items = document.querySelectorAll('.symptom-item');
+  items.forEach(item => {
+    item.addEventListener('click', () => {
+      item.classList.toggle('checked');
+      const cb = item.querySelector('.symptom-checkbox');
+      if (cb) cb.textContent = item.classList.contains('checked') ? '✓' : '';
+      updateScore();
+    });
+  });
+
+  document.getElementById('clearSymptoms').addEventListener('click', () => {
+    items.forEach(i => { i.classList.remove('checked'); const cb = i.querySelector('.symptom-checkbox'); if(cb) cb.textContent = ''; });
+    updateScore();
+  });
+
+  function updateScore() {
+    const checked = document.querySelectorAll('.symptom-item.checked');
+    const total = items.length;
+    const count = checked.length;
+    const pct = Math.round((count / total) * 100);
+
+    const mCount = document.querySelectorAll('[data-condition="measles"].checked').length;
+    const mpCount = document.querySelectorAll('[data-condition="monkeypox"].checked').length;
+    const gCount = document.querySelectorAll('[data-condition="general"].checked').length;
+
+    document.getElementById('symptomScore').textContent = `${count}/${total}`;
+    document.getElementById('measlesSel').textContent = mCount;
+    document.getElementById('monkeypoxSel').textContent = mpCount;
+    document.getElementById('generalSel').textContent = gCount;
+
+    const fill = document.getElementById('symptomScoreFill');
+    if (fill) fill.style.width = pct + '%';
+
+    const riskEl = document.getElementById('symptomRisk');
+    const adviceEl = document.getElementById('symptomAdvice');
+    if (pct >= 57) {
+      riskEl.textContent = 'High'; riskEl.className = 'badge badge-danger';
+      adviceEl.style.display = 'flex'; adviceEl.textContent = '🚨 High symptom load detected. Seek medical attention.';
+    } else if (pct >= 28) {
+      riskEl.textContent = 'Moderate'; riskEl.className = 'badge badge-warning';
+      adviceEl.style.display = 'flex'; adviceEl.textContent = '⚠️ Moderate symptoms. Monitor closely and consider seeing a doctor.';
+    } else {
+      riskEl.textContent = 'Low'; riskEl.className = 'badge badge-success';
+      adviceEl.style.display = 'none';
+    }
+
+    const names = [...checked].map(i => i.querySelector('.symptom-name')?.textContent).filter(Boolean);
+    sessionStorage.setItem('ms-symptoms', JSON.stringify(names));
+  }
+});
+</script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

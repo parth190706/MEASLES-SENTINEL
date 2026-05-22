@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — Measles Sentinel</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<div class="auth-wrapper page">
+  <div class="auth-card glass-card animate-in">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🧬</div>
+      <div style="font-size:1rem; font-weight:700; color:var(--primary); letter-spacing:1px;">MEASLES SENTINEL</div>
+    </div>
+
+    <div class="disclaimer" style="margin-bottom:24px;">
+      ⚠️ AI-assisted screening only. Consult a healthcare professional.
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="loginTab">Login</button>
+      <button class="tab-btn" data-tab="registerTab">Register</button>
+    </div>
+
+    <!-- LOGIN TAB -->
+    <div class="tab-panel active" id="loginTab">
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="loginPassword" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">
+          <span id="loginBtnText">Sign In</span>
+          <span class="loading-spinner" id="loginSpinner" style="display:none;"></span>
+        </button>
+      </form>
+      <div class="auth-divider">or</div>
+      <button class="btn btn-secondary btn-block" id="googleLoginBtn">
+        <img src="https://www.google.com/favicon.ico" width="16" alt="" /> Continue with Google
+      </button>
+    </div>
+
+    <!-- REGISTER TAB -->
+    <div class="tab-panel" id="registerTab">
+      <form id="registerForm">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="regName" placeholder="John Doe" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="regEmail" placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="regPassword" placeholder="Min. 6 characters" required minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="regBtn">
+          <span id="regBtnText">Create Account</span>
+          <span class="loading-spinner" id="regSpinner" style="display:none;"></span>
+        </button>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      <a href="/">← Back to Home</a>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { loginUser, registerUser, loginWithGoogle, onAuthChange } from '/static/js/firebase-config.js';
+import { showToast, initTabs, toggleTheme } from '/static/js/main.js';
+
+// Redirect if already logged in
+onAuthChange(user => { if (user) window.location.href = '/dashboard'; });
+
+// Init tabs
+document.addEventListener('DOMContentLoaded', () => { initTabs(); });
+
+// LOGIN
+document.getElementById('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const spinner = document.getElementById('loginSpinner');
+  const text = document.getElementById('loginBtnText');
+  btn.disabled = true; spinner.style.display = 'inline-block'; text.textContent = 'Signing in...';
+  try {
+    await loginUser(
+      document.getElementById('loginEmail').value,
+      document.getElementById('loginPassword').value
+    );
+    showToast('Welcome back!', 'success');
+    window.location.href = '/dashboard';
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; spinner.style.display = 'none'; text.textContent = 'Sign In';
+  }
+});
+
+// REGISTER
+document.getElementById('registerForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('regBtn');
+  const spinner = document.getElementById('regSpinner');
+  const text = document.getElementById('regBtnText');
+  btn.disabled = true; spinner.style.display = 'inline-block'; text.textContent = 'Creating...';
+  try {
+    await registerUser(
+      document.getElementById('regEmail').value,
+      document.getElementById('regPassword').value,
+      document.getElementById('regName').value
+    );
+    showToast('Account created!', 'success');
+    window.location.href = '/dashboard';
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.disabled = false; spinner.style.display = 'none'; text.textContent = 'Create Account';
+  }
+});
+
+// GOOGLE
+document.getElementById('googleLoginBtn').addEventListener('click', async () => {
+  try {
+    await loginWithGoogle();
+    window.location.href = '/dashboard';
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+});
+</script>
+</body>
+</html>

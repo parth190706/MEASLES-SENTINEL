@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>History — Measles Sentinel</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<nav class="navbar">
+  <a href="/" class="nav-brand"><div class="brand-icon">🧬</div> MEASLES SENTINEL</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">📊 Dashboard</a>
+    <a href="/symptoms" class="nav-link">📋 Symptoms</a>
+    <a href="/upload" class="nav-link">📷 Scan</a>
+    <a href="/history" class="nav-link active">🕒 History</a>
+  </div>
+  <div class="nav-actions">
+    <button class="icon-btn" id="themeBtn">☀️</button>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="section">
+    <div class="disclaimer animate-in" style="margin-bottom:24px;">
+      ⚠️ AI-assisted screening only. Consult a healthcare professional.
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px;" class="animate-in">
+      <div>
+        <div class="section-title">Scan History</div>
+        <div class="section-sub" style="margin-bottom:0;">All your previous AI screenings</div>
+      </div>
+      <a href="/upload" class="btn btn-primary">+ New Scan</a>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="glass-card animate-in delay-1" style="padding:16px 20px; margin-bottom:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+        <input type="text" class="form-input" id="searchInput" placeholder="🔍 Search scans..." style="margin:0;" />
+      </div>
+      <select class="form-select" id="filterCondition" style="width:160px;">
+        <option value="">All Conditions</option>
+        <option value="measles">Measles</option>
+        <option value="monkeypox">Monkeypox</option>
+        <option value="normal">Normal</option>
+      </select>
+      <select class="form-select" id="filterRisk" style="width:140px;">
+        <option value="">All Risk Levels</option>
+        <option value="high">High</option>
+        <option value="medium">Moderate</option>
+        <option value="low">Low</option>
+      </select>
+    </div>
+
+    <!-- TABLE / LIST -->
+    <div class="glass-card animate-in delay-2" id="historyContainer" style="overflow:hidden;">
+      <div id="loadingState" style="text-align:center; padding:48px; color:var(--text-muted);">
+        <div class="loading-spinner" style="margin:0 auto 16px;"></div>
+        <div>Loading scan history...</div>
+      </div>
+      <div id="emptyState" style="display:none; text-align:center; padding:48px; color:var(--text-muted);">
+        <div style="font-size:3rem; margin-bottom:16px;">🔍</div>
+        <div style="font-weight:600; color:var(--text-secondary); margin-bottom:8px;">No scans found</div>
+        <div style="font-size:0.875rem; margin-bottom:20px;">Start your first AI screening.</div>
+        <a href="/upload" class="btn btn-primary">Start Scan</a>
+      </div>
+      <div id="tableWrap" style="display:none; overflow-x:auto;">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Image</th>
+              <th>Condition</th>
+              <th>Confidence</th>
+              <th>Risk</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAGINATION -->
+    <div id="pagination" style="display:flex; justify-content:center; gap:8px; margin-top:20px;"></div>
+  </section>
+</div>
+
+<script type="module">
+import { onAuthChange, getUserScans, deleteScan } from '/static/js/firebase-config.js';
+import { showToast } from '/static/js/main.js';
+
+let allScans = [];
+
+onAuthChange(async user => {
+  if (!user) { window.location.href = '/login'; return; }
+  try {
+    allScans = await getUserScans(user.uid);
+    renderScans(allScans);
+  } catch(e) {
+    document.getElementById('loadingState').innerHTML = '<div style="color:var(--danger);">Failed to load history.</div>';
+  }
+});
+
+function renderScans(scans) {
+  const loading = document.getElementById('loadingState');
+  const empty = document.getElementById('emptyState');
+  const tableWrap = document.getElementById('tableWrap');
+  const body = document.getElementById('historyBody');
+
+  loading.style.display = 'none';
+
+  if (!scans.length) {
+    empty.style.display = 'block';
+    tableWrap.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  tableWrap.style.display = 'block';
+
+  const riskBadge = r => {
+    if (r === 'high') return '<span class="badge badge-danger">High</span>';
+    if (r === 'medium') return '<span class="badge badge-warning">Moderate</span>';
+    return '<span class="badge badge-success">Low</span>';
+  };
+  const condBadge = c => {
+    const cls = c?.toLowerCase();
+    if (cls === 'measles') return '<span class="badge badge-danger">Measles</span>';
+    if (cls === 'monkeypox') return '<span class="badge badge-warning">Monkeypox</span>';
+    return '<span class="badge badge-success">Normal</span>';
+  };
+
+  body.innerHTML = scans.map(s => `
+    <tr>
+      <td>
+        ${s.imageURL ? `<img src="${s.imageURL}" class="thumb" alt="scan" onerror="this.src=''" />` : '<div style="width:48px;height:48px;background:var(--glass);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🖼️</div>'}
+      </td>
+      <td>${condBadge(s.condition)}</td>
+      <td><strong style="color:var(--primary);">${s.confidence || 0}%</strong></td>
+      <td>${riskBadge(s.risk)}</td>
+      <td style="color:var(--text-muted); font-size:0.8rem;">
+        ${s.createdAt?.toDate?.()?.toLocaleString() || 'Recent'}
+      </td>
+      <td>
+        <button class="btn btn-secondary btn-sm" onclick="viewScan('${s.id}')">View</button>
+        <button class="btn btn-danger btn-sm" style="margin-left:6px;" onclick="removeScan('${s.id}')">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+window.removeScan = async (id) => {
+  if (!confirm('Delete this scan?')) return;
+  try {
+    await deleteScan(id);
+    allScans = allScans.filter(s => s.id !== id);
+    renderScans(allScans);
+    showToast('Scan deleted.', 'success');
+  } catch(e) { showToast('Failed to delete.', 'error'); }
+};
+
+window.viewScan = (id) => {
+  const scan = allScans.find(s => s.id === id);
+  if (!scan) return;
+  sessionStorage.setItem('ms-scanResult', JSON.stringify(scan));
+  window.location.href = '/report';
+};
+
+// Filtering
+document.getElementById('searchInput').addEventListener('input', applyFilter);
+document.getElementById('filterCondition').addEventListener('change', applyFilter);
+document.getElementById('filterRisk').addEventListener('change', applyFilter);
+
+function applyFilter() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const cond = document.getElementById('filterCondition').value.toLowerCase();
+  const risk = document.getElementById('filterRisk').value.toLowerCase();
+  const filtered = allScans.filter(s => {
+    const matchSearch = !search || s.condition?.toLowerCase().includes(search);
+    const matchCond = !cond || s.condition?.toLowerCase() === cond;
+    const matchRisk = !risk || s.risk?.toLowerCase() === risk;
+    return matchSearch && matchCond && matchRisk;
+  });
+  renderScans(filtered);
+}
+</script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

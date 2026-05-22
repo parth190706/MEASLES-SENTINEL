@@ -1,0 +1,13 @@
+{
+  "name": "measles-sentinel",
+  "version": "1.0.0",
+  "description": "AI-assisted rash screening app",
+  "scripts": {
+    "dev": "python app.py"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs": "^4.20.0",
+    "@teachablemachine/image": "^0.8.5"
+  },
+  "devDependencies": {}
+}

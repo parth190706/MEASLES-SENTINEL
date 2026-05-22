@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profile — Measles Sentinel</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<nav class="navbar">
+  <a href="/" class="nav-brand"><div class="brand-icon">🧬</div> MEASLES SENTINEL</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">📊 Dashboard</a>
+    <a href="/symptoms" class="nav-link">📋 Symptoms</a>
+    <a href="/upload" class="nav-link">📷 Scan</a>
+    <a href="/history" class="nav-link">🕒 History</a>
+    <a href="/profile" class="nav-link active">👤 Profile</a>
+  </div>
+  <div class="nav-actions">
+    <button class="icon-btn" id="themeBtn">☀️</button>
+    <button class="btn btn-secondary btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="section" style="max-width:860px;">
+    <div class="disclaimer animate-in" style="margin-bottom:24px;">
+      ⚠️ AI-assisted screening only. Consult a healthcare professional.
+    </div>
+
+    <!-- PROFILE COVER -->
+    <div class="animate-in">
+      <div class="profile-cover"></div>
+      <div class="profile-info">
+        <div class="profile-avatar-wrap">
+          <div class="avatar avatar-lg" id="profileAvatar">?</div>
+        </div>
+        <div style="flex:1;">
+          <div class="profile-name" id="profileName">Loading...</div>
+          <div class="profile-email" id="profileEmail"></div>
+        </div>
+        <div style="display:flex; gap:10px; align-self:flex-start; margin-top:8px;">
+          <span class="badge badge-primary" id="scanBadge">0 scans</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:24px; gap:20px;">
+      <!-- PROFILE SETTINGS -->
+      <div>
+        <div class="glass-card animate-in delay-1" style="padding:28px; margin-bottom:20px;">
+          <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:20px;">Account Details</h3>
+          <form id="profileForm">
+            <div class="form-group">
+              <label class="form-label">Display Name</label>
+              <input type="text" class="form-input" id="editName" placeholder="Your name" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" id="editEmail" disabled style="opacity:0.6; cursor:not-allowed;" />
+              <div style="font-size:0.75rem; color:var(--text-muted); margin-top:6px;">Email cannot be changed here.</div>
+            </div>
+            <button type="submit" class="btn btn-primary" id="saveProfileBtn">
+              <span id="saveText">Save Changes</span>
+              <span class="loading-spinner" id="saveSpinner" style="display:none;"></span>
+            </button>
+          </form>
+        </div>
+
+        <!-- CHANGE PASSWORD -->
+        <div class="glass-card animate-in delay-2" style="padding:28px;">
+          <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:20px;">Change Password</h3>
+          <form id="passwordForm">
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-input" id="newPassword" placeholder="Min. 6 characters" minlength="6" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm Password</label>
+              <input type="password" class="form-input" id="confirmPassword" placeholder="Repeat new password" />
+            </div>
+            <button type="submit" class="btn btn-secondary">Update Password</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div>
+        <!-- PREFERENCES -->
+        <div class="glass-card animate-in delay-1" style="padding:28px; margin-bottom:20px;">
+          <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:20px;">Preferences</h3>
+
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; font-size:0.9rem;">Dark Mode</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Toggle light/dark theme</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="darkModeToggle" />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; font-size:0.9rem;">Save Scan History</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">Auto-save results to cloud</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="autoSaveToggle" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <div style="font-weight:600; font-size:0.9rem;">Show Disclaimer</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">AI screening reminder on pages</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="disclaimerToggle" checked />
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="glass-card animate-in delay-2" style="padding:28px; margin-bottom:20px;">
+          <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary); margin-bottom:20px;">Your Stats</h3>
+          <div style="display:flex; flex-direction:column; gap:12px;">
+            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--glass-border);">
+              <span style="font-size:0.875rem;">Total Scans</span>
+              <span id="statTotal" style="font-weight:700; color:var(--primary);">0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--glass-border);">
+              <span style="font-size:0.875rem;">Measles Detections</span>
+              <span id="statMeasles" style="font-weight:700; color:var(--danger);">0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--glass-border);">
+              <span style="font-size:0.875rem;">Monkeypox Detections</span>
+              <span id="statMonkeypox" style="font-weight:700; color:var(--warning);">0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding:10px 0;">
+              <span style="font-size:0.875rem;">Normal Results</span>
+              <span id="statNormal" style="font-weight:700; color:var(--success);">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- DANGER ZONE -->
+        <div class="glass-card animate-in delay-3" style="padding:28px; border-color:rgba(255,71,87,0.3);">
+          <h3 style="font-size:0.9rem; text-transform:uppercase; letter-spacing:0.5px; color:var(--danger); margin-bottom:16px;">Danger Zone</h3>
+          <p style="font-size:0.8rem; color:var(--text-muted); margin-bottom:16px; line-height:1.6;">Permanently delete your account and all scan history. This action cannot be undone.</p>
+          <button class="btn btn-danger btn-sm" id="deleteAccountBtn">Delete Account</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import {
+  onAuthChange, logoutUser, getCurrentUser,
+  getUserScans, auth, db
+} from '/static/js/firebase-config.js';
+import { showToast } from '/static/js/main.js';
+import { updateProfile, updatePassword, deleteUser } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// Theme toggle init
+const savedTheme = localStorage.getItem('ms-theme') || 'dark';
+document.getElementById('darkModeToggle').checked = savedTheme === 'dark';
+document.getElementById('darkModeToggle').addEventListener('change', e => {
+  const t = e.target.checked ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('ms-theme', t);
+});
+
+// Auto-save toggle
+document.getElementById('autoSaveToggle').checked = localStorage.getItem('ms-autosave') !== 'false';
+document.getElementById('autoSaveToggle').addEventListener('change', e => {
+  localStorage.setItem('ms-autosave', e.target.checked);
+});
+
+onAuthChange(async user => {
+  if (!user) { window.location.href = '/login'; return; }
+
+  const name = user.displayName || user.email.split('@')[0];
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileEmail').textContent = user.email;
+  document.getElementById('editName').value = name;
+  document.getElementById('editEmail').value = user.email;
+  document.getElementById('profileAvatar').textContent = name.charAt(0).toUpperCase();
+
+  try {
+    const scans = await getUserScans(user.uid);
+    document.getElementById('scanBadge').textContent = `${scans.length} scans`;
+    document.getElementById('statTotal').textContent = scans.length;
+    document.getElementById('statMeasles').textContent = scans.filter(s => s.condition?.toLowerCase() === 'measles').length;
+    document.getElementById('statMonkeypox').textContent = scans.filter(s => s.condition?.toLowerCase() === 'monkeypox').length;
+    document.getElementById('statNormal').textContent = scans.filter(s => s.condition?.toLowerCase() === 'normal').length;
+  } catch(e) {}
+});
+
+// Save profile
+document.getElementById('profileForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn = document.getElementById('saveProfileBtn');
+  const spinner = document.getElementById('saveSpinner');
+  const text = document.getElementById('saveText');
+  btn.disabled = true; spinner.style.display = 'inline-block'; text.textContent = 'Saving...';
+  try {
+    const user = getCurrentUser();
+    const newName = document.getElementById('editName').value.trim();
+    await updateProfile(user, { displayName: newName });
+    document.getElementById('profileName').textContent = newName;
+    document.getElementById('profileAvatar').textContent = newName.charAt(0).toUpperCase();
+    showToast('Profile updated.', 'success');
+  } catch(err) { showToast(err.message, 'error'); }
+  finally { btn.disabled = false; spinner.style.display = 'none'; text.textContent = 'Save Changes'; }
+});
+
+// Change password
+document.getElementById('passwordForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const np = document.getElementById('newPassword').value;
+  const cp = document.getElementById('confirmPassword').value;
+  if (np !== cp) { showToast('Passwords do not match.', 'error'); return; }
+  try {
+    const user = getCurrentUser();
+    await updatePassword(user, np);
+    showToast('Password updated.', 'success');
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmPassword').value = '';
+  } catch(err) { showToast(err.message, 'error'); }
+});
+
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', () => logoutUser());
+
+// Delete account
+document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
+  if (!confirm('Are you sure? This will permanently delete your account and all data.')) return;
+  try {
+    const user = getCurrentUser();
+    await deleteUser(user);
+    window.location.href = '/';
+  } catch(err) { showToast(err.message || 'Re-login and try again.', 'error'); }
+});
+</script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

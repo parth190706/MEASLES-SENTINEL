@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scanning — Measles Sentinel</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<nav class="navbar">
+  <a href="/" class="nav-brand"><div class="brand-icon">🧬</div> MEASLES SENTINEL</a>
+  <div class="nav-actions">
+    <button class="icon-btn" id="themeBtn">☀️</button>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="section" style="max-width:600px;">
+    <div class="disclaimer animate-in" style="margin-bottom:24px;">
+      ⚠️ AI-assisted screening only. Consult a healthcare professional.
+    </div>
+
+    <div class="scan-container">
+      <!-- SCAN CIRCLE -->
+      <div>
+        <div class="scan-circle" id="scanCircle">
+          <img id="scanImage" class="scan-image" src="" alt="Scan" />
+          <div class="scan-line" id="scanLine"></div>
+        </div>
+      </div>
+
+      <!-- LABEL -->
+      <div class="scan-label" id="scanLabel">ANALYZING...</div>
+
+      <!-- STEPS -->
+      <ul class="scan-steps" id="scanSteps">
+        <li class="scan-step" id="step1">
+          <div class="scan-step-dot"></div>
+          <span>Loading TensorFlow.js model</span>
+        </li>
+        <li class="scan-step" id="step2">
+          <div class="scan-step-dot"></div>
+          <span>Pre-processing image</span>
+        </li>
+        <li class="scan-step" id="step3">
+          <div class="scan-step-dot"></div>
+          <span>Running AI inference</span>
+        </li>
+        <li class="scan-step" id="step4">
+          <div class="scan-step-dot"></div>
+          <span>Calculating confidence scores</span>
+        </li>
+        <li class="scan-step" id="step5">
+          <div class="scan-step-dot"></div>
+          <span>Generating risk report</span>
+        </li>
+      </ul>
+
+      <!-- PROGRESS BAR -->
+      <div style="width:300px; max-width:100%;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:0.8rem; color:var(--text-muted);">
+          <span>Progress</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="confidence-track">
+          <div class="confidence-fill" id="progressFill" style="width:0%; transition: width 0.5s ease;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import { showToast } from '/static/js/main.js';
+
+const imgEl = document.getElementById('scanImage');
+const imageURL = sessionStorage.getItem('ms-imageURL') || '';
+if (imageURL) imgEl.src = imageURL;
+
+const steps = ['step1','step2','step3','step4','step5'];
+let current = 0;
+
+function setProgress(pct) {
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function advanceStep(i) {
+  if (i > 0) {
+    const prev = document.getElementById(steps[i-1]);
+    prev.classList.remove('active');
+    prev.classList.add('done');
+    prev.querySelector('.scan-step-dot').textContent = '';
+    prev.insertAdjacentHTML('beforeend', ' ✓');
+  }
+  if (i < steps.length) {
+    document.getElementById(steps[i]).classList.add('active');
+  }
+}
+
+async function runScanAnimation() {
+  const delays = [600, 700, 800, 600, 700];
+  const progs = [10, 30, 65, 85, 100];
+
+  for (let i = 0; i < steps.length; i++) {
+    advanceStep(i);
+    setProgress(progs[i]);
+    await new Promise(r => setTimeout(r, delays[i]));
+  }
+
+  // Mark last step done
+  const last = document.getElementById(steps[steps.length - 1]);
+  last.classList.remove('active');
+  last.classList.add('done');
+
+  document.getElementById('scanLabel').textContent = 'COMPLETE';
+  document.getElementById('scanLine').style.display = 'none';
+  document.getElementById('scanCircle').style.borderColor = 'var(--success)';
+
+  await new Promise(r => setTimeout(r, 600));
+  window.location.href = '/report';
+}
+
+// Check we have results
+const result = sessionStorage.getItem('ms-scanResult');
+if (!result) {
+  window.location.href = '/upload';
+} else {
+  runScanAnimation();
+}
+</script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

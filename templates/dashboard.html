@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Measles Sentinel</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-orb bg-orb-1"></div>
+<div class="bg-orb bg-orb-2"></div>
+
+<nav class="navbar">
+  <a href="/" class="nav-brand"><div class="brand-icon">🧬</div> MEASLES SENTINEL</a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link active">📊 Dashboard</a>
+    <a href="/symptoms" class="nav-link">📋 Symptoms</a>
+    <a href="/upload" class="nav-link">📷 Scan</a>
+    <a href="/history" class="nav-link">🕒 History</a>
+    <a href="/profile" class="nav-link">👤 Profile</a>
+  </div>
+  <div class="nav-actions">
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">☀️</button>
+    <button class="btn btn-secondary btn-sm" id="logoutBtn">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <section class="section">
+    <div class="disclaimer animate-in" style="margin-bottom:24px;">
+      ⚠️ AI-assisted screening only. Consult a healthcare professional.
+    </div>
+
+    <!-- WELCOME -->
+    <div style="margin-bottom:32px;" class="animate-in">
+      <div class="section-title">Good day, <span id="userDisplayName" style="color:var(--primary);">User</span> 👋</div>
+      <div class="section-sub">Here's your screening overview</div>
+    </div>
+
+    <!-- STAT CARDS -->
+    <div class="grid-4" style="margin-bottom:32px;">
+      <div class="glass-card stat-card animate-in delay-1">
+        <div class="stat-value" id="totalScans">0</div>
+        <div class="stat-label">Total Scans</div>
+      </div>
+      <div class="glass-card stat-card animate-in delay-2">
+        <div class="stat-value" id="measlesCount" style="color:var(--danger);">0</div>
+        <div class="stat-label">Measles Flags</div>
+      </div>
+      <div class="glass-card stat-card animate-in delay-3">
+        <div class="stat-value" id="monkeypoxCount" style="color:var(--warning);">0</div>
+        <div class="stat-label">Monkeypox Flags</div>
+      </div>
+      <div class="glass-card stat-card animate-in delay-4">
+        <div class="stat-value" id="normalCount" style="color:var(--success);">0</div>
+        <div class="stat-label">Normal Results</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- QUICK ACTIONS -->
+      <div class="glass-card animate-in delay-1" style="padding:28px;">
+        <h3 style="margin-bottom:20px; font-size:1rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Quick Actions</h3>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <a href="/upload" class="btn btn-primary">🔬 Start New Scan</a>
+          <a href="/symptoms" class="btn btn-secondary">📋 Check Symptoms</a>
+          <a href="/history" class="btn btn-secondary">🕒 View History</a>
+        </div>
+      </div>
+
+      <!-- RECENT SCANS -->
+      <div class="glass-card animate-in delay-2" style="padding:28px;">
+        <h3 style="margin-bottom:20px; font-size:1rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Recent Scans</h3>
+        <div id="recentScans">
+          <div style="text-align:center; color:var(--text-muted); padding:24px; font-size:0.875rem;">
+            No scans yet. <a href="/upload" style="color:var(--primary);">Start your first scan →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HEALTH TIPS -->
+    <div class="glass-card animate-in delay-3" style="padding:28px; margin-top:24px;">
+      <h3 style="margin-bottom:20px; font-size:1rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Prevention Tips</h3>
+      <div class="grid-3">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.5rem;">💉</span>
+          <div>
+            <div style="font-weight:600; margin-bottom:4px;">Vaccinate</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">Stay up to date with MMR and recommended vaccines.</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.5rem;">🧼</span>
+          <div>
+            <div style="font-weight:600; margin-bottom:4px;">Hygiene</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">Wash hands regularly and avoid touching face.</div>
+          </div>
+        </div>
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <span style="font-size:1.5rem;">🏥</span>
+          <div>
+            <div style="font-weight:600; margin-bottom:4px;">See a Doctor</div>
+            <div style="font-size:0.8rem; color:var(--text-secondary);">Any rash with fever — consult a professional immediately.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+import { onAuthChange, logoutUser, getUserScans } from '/static/js/firebase-config.js';
+import { showToast } from '/static/js/main.js';
+
+onAuthChange(async user => {
+  if (!user) { window.location.href = '/login'; return; }
+  document.getElementById('userDisplayName').textContent = user.displayName || user.email.split('@')[0];
+  try {
+    const scans = await getUserScans(user.uid);
+    document.getElementById('totalScans').textContent = scans.length;
+    document.getElementById('measlesCount').textContent = scans.filter(s => s.condition?.toLowerCase() === 'measles').length;
+    document.getElementById('monkeypoxCount').textContent = scans.filter(s => s.condition?.toLowerCase() === 'monkeypox').length;
+    document.getElementById('normalCount').textContent = scans.filter(s => s.condition?.toLowerCase() === 'normal').length;
+    if (scans.length > 0) {
+      const container = document.getElementById('recentScans');
+      container.innerHTML = scans.slice(0, 5).map(s => `
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--glass-border);">
+          <div>
+            <div style="font-weight:600; font-size:0.875rem;">${s.condition || 'Unknown'}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${s.createdAt?.toDate?.()?.toLocaleDateString() || 'Recent'}</div>
+          </div>
+          <span class="badge ${s.condition?.toLowerCase() === 'normal' ? 'badge-success' : 'badge-danger'}">${s.confidence || 0}%</span>
+        </div>
+      `).join('');
+    }
+  } catch(e) { showToast('Could not load scan history.', 'error'); }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', () => logoutUser());
+</script>
+<script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
