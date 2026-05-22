@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Measles AI Sentinel — Outbreak Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ─── DESIGN TOKENS ─── */
+:root {
+  --navy: #0D3B6E;
+  --navy-dark: #071D35;
+  --teal: #1ABC9C;
+  --teal-light: #2DD4BF;
+  --teal-dark: #0E9E82;
+  --bg: #EEF2F7;
+  --white: #FFFFFF;
+  --text-primary: #0A1929;
+  --text-secondary: #4A6080;
+  --text-muted: #8098B0;
+  --green: #2ECC71;
+  --amber: #F39C12;
+  --red: #E74C3C;
+  --blue-accent: #3FA9F5;
+  --border: #D8E4F0;
+  --shadow: 0 2px 16px rgba(13,59,110,0.08);
+  --shadow-lg: 0 12px 40px rgba(13,59,110,0.14);
+  --gradient: linear-gradient(135deg, #0D3B6E 0%, #0E9E82 100%);
+  --gradient-hero: linear-gradient(135deg, #061829 0%, #0A3B6E 40%, #0E9E82 100%);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text-primary);overflow-x:hidden;}
+
+/* ─── NAV ─── */
+.nav{background:var(--navy-dark);height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:1000;box-shadow:0 2px 24px rgba(0,0,0,0.3);}
+.nav-logo{display:flex;align-items:center;gap:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;cursor:pointer;}
+.nav-logo .pulse{width:8px;height:8px;background:var(--teal);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(26,188,156,0.6);}50%{box-shadow:0 0 0 6px rgba(26,188,156,0);}}
+.nav-links{display:flex;align-items:center;gap:3px;}
+.nav-link{color:rgba(255,255,255,0.65);padding:8px 13px;border-radius:8px;font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s;border:none;background:none;white-space:nowrap;}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,0.09);}
+.nav-link.active{background:var(--teal);color:#fff;}
+.nav-link svg{width:14px;height:14px;flex-shrink:0;}
+
+/* ─── PAGE SYSTEM ─── */
+.page{display:none;animation:pageIn 0.35s ease;}
+.page.active{display:block;}
+@keyframes pageIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+/* ─── HERO ─── */
+.hero{background:var(--gradient-hero);min-height:calc(100vh - 62px);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:60px 28px;position:relative;overflow:hidden;}
+.hero-grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;}
+.hero-badge{background:rgba(26,188,156,0.15);border:1px solid rgba(26,188,156,0.35);color:var(--teal-light);padding:6px 18px;border-radius:100px;font-size:12.5px;font-weight:600;letter-spacing:0.06em;margin-bottom:26px;display:inline-flex;align-items:center;gap:8px;position:relative;}
+.hero h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(34px,5.5vw,68px);font-weight:700;color:#fff;line-height:1.1;margin-bottom:18px;max-width:820px;position:relative;}
+.hero h1 span{color:var(--teal-light);}
+.hero p{font-size:19px;color:rgba(255,255,255,0.7);max-width:540px;margin-bottom:44px;line-height:1.65;position:relative;}
+.hero-btns{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:72px;position:relative;}
+.btn-primary{background:#fff;color:var(--navy-dark);border:none;padding:14px 26px;border-radius:100px;font-size:14.5px;font-weight:700;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(0,0,0,0.22);}
+.btn-outline{background:rgba(255,255,255,0.08);color:#fff;border:1.5px solid rgba(255,255,255,0.28);padding:14px 26px;border-radius:100px;font-size:14.5px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px;font-family:'DM Sans',sans-serif;}
+.btn-outline:hover{background:rgba(255,255,255,0.15);transform:translateY(-2px);}
+.hero-feature-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;width:100%;max-width:960px;position:relative;}
+.hero-feat{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:16px;padding:22px 18px;text-align:center;cursor:pointer;transition:all 0.25s;}
+.hero-feat:hover{background:rgba(255,255,255,0.13);transform:translateY(-4px);border-color:rgba(26,188,156,0.45);}
+.feat-icon{width:46px;height:46px;background:rgba(26,188,156,0.18);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 13px;font-size:20px;}
+.hero-feat h3{color:#fff;font-size:14px;font-weight:600;margin-bottom:6px;}
+.hero-feat p{color:rgba(255,255,255,0.55);font-size:12.5px;line-height:1.5;}
+
+.how-section{background:var(--gradient);padding:80px 28px;text-align:center;}
+.how-section h2{font-family:'Space Grotesk',sans-serif;font-size:34px;font-weight:700;color:#fff;margin-bottom:56px;}
+.how-steps{display:flex;justify-content:center;gap:56px;flex-wrap:wrap;max-width:760px;margin:0 auto;}
+.how-step{max-width:190px;}
+.how-num{width:62px;height:62px;border-radius:50%;border:2px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#fff;margin:0 auto 16px;}
+.how-step h3{color:#fff;font-size:15.5px;font-weight:600;margin-bottom:8px;}
+.how-step p{color:rgba(255,255,255,0.6);font-size:13.5px;line-height:1.55;}
+
+footer{background:var(--navy-dark);padding:40px 48px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:20px;}
+footer h4{color:#fff;font-size:15px;font-weight:600;margin-bottom:8px;}
+footer p{color:rgba(255,255,255,0.5);font-size:13.5px;line-height:1.65;}
+.footer-copy{width:100%;text-align:center;color:rgba(255,255,255,0.3);font-size:12.5px;padding-top:22px;border-top:1px solid rgba(255,255,255,0.07);margin-top:12px;}
+
+/* ─── DASHBOARD LAYOUT ─── */
+.dash-wrap{max-width:1180px;margin:0 auto;padding:30px 22px;}
+.dash-title{font-family:'Space Grotesk',sans-serif;font-size:27px;font-weight:700;color:var(--navy-dark);margin-bottom:3px;}
+.dash-sub{color:var(--text-secondary);font-size:14.5px;margin-bottom:26px;}
+
+/* Alerts */
+.alert-card{border-radius:12px;padding:16px 18px;margin-bottom:11px;display:flex;align-items:flex-start;gap:13px;background:#fff;box-shadow:var(--shadow);border-left:4px solid var(--red);position:relative;animation:slideIn 0.35s ease;}
+.alert-card.warn{border-left-color:var(--amber);}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.alert-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:17px;line-height:1;padding:2px;}
+.alert-title{font-weight:700;font-size:14.5px;color:var(--text-primary);margin-bottom:2px;}
+.alert-msg{font-size:13.5px;color:var(--text-secondary);}
+.alert-region{font-size:12px;color:var(--text-muted);margin-top:3px;font-weight:500;}
+
+/* Section headers */
+.sec-hdr{background:var(--gradient);border-radius:14px 14px 0 0;padding:17px 22px;display:flex;align-items:center;gap:11px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:600;}
+.sec-hdr svg{opacity:.9;}
+.sec-body{background:#fff;border-radius:0 0 14px 14px;padding:26px;box-shadow:var(--shadow);margin-bottom:26px;}
+
+/* Inputs */
+.input-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;}
+.input-grid label{display:block;font-size:13.5px;font-weight:600;color:var(--text-secondary);margin-bottom:7px;}
+.form-input{width:100%;padding:10px 13px;border:1.5px solid var(--border);border-radius:10px;font-size:14.5px;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text-primary);outline:none;transition:border 0.2s;}
+.form-input:focus{border-color:var(--teal);background:#fff;}
+
+/* Buttons */
+.btn-teal{background:var(--gradient);color:#fff;border:none;padding:12px 26px;border-radius:10px;font-size:14.5px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:8px;}
+.btn-teal:hover:not(:disabled){opacity:.92;transform:translateY(-1px);box-shadow:0 6px 20px rgba(13,59,110,0.2);}
+.btn-teal:disabled{opacity:0.6;cursor:not-allowed;}
+
+/* Risk gauge */
+.gauge-area{display:flex;gap:28px;flex-wrap:wrap;align-items:center;padding:10px 0 20px;}
+.gauge-svg-wrap{flex-shrink:0;}
+.gauge-svg{width:200px;height:122px;}
+.risk-factors-grid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;min-width:220px;}
+.rf-card{border-radius:11px;padding:15px 14px;background:var(--bg);border:1.5px solid var(--border);text-align:center;}
+.rf-label{font-size:11.5px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;}
+.rf-val{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;}
+.c-green{color:var(--green);} .c-amber{color:var(--amber);} .c-red{color:var(--red);}
+
+/* AI Response Box */
+.ai-box{background:linear-gradient(135deg,#f0faf7,#e8f4ff);border:1.5px solid #b8e8d8;border-radius:12px;padding:20px;margin-top:18px;display:none;}
+.ai-box.show{display:block;animation:fadeUp 0.4s ease;}
+.ai-box-hdr{display:flex;align-items:center;gap:8px;font-weight:700;color:var(--teal-dark);margin-bottom:12px;font-size:14.5px;}
+.ai-box-content{font-size:13.5px;color:var(--text-primary);line-height:1.75;}
+.ai-box-content h4{color:var(--navy);font-size:13.5px;margin:10px 0 4px;}
+.ai-box-content ul{padding-left:18px;}
+.ai-box-content li{margin-bottom:3px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* Structured AI output */
+.ai-section{margin-bottom:14px;}
+.ai-section-title{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--teal-dark);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.ai-section-body{font-size:13.5px;color:var(--text-secondary);line-height:1.65;padding-left:12px;border-left:3px solid var(--teal);}
+.ai-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:12px;font-weight:600;margin:3px;}
+.tag-red{background:#fde8e6;color:#c0392b;} .tag-amber{background:#fef3cd;color:#9a6600;} .tag-green{background:#d5f5e3;color:#1a8a47;} .tag-blue{background:#dbeeff;color:#1a5fa8;}
+
+/* Symptoms */
+.symptom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:11px;margin:18px 0;}
+.sym-item{display:flex;align-items:center;gap:9px;padding:11px 13px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;transition:all 0.2s;user-select:none;background:var(--bg);}
+.sym-item:hover{border-color:var(--teal);background:#f0faf7;}
+.sym-item.checked{border-color:var(--teal);background:linear-gradient(135deg,#e8f8f4,#f0faf7);}
+.sym-item input[type=checkbox]{accent-color:var(--teal);width:15px;height:15px;cursor:pointer;flex-shrink:0;}
+.sym-item span{font-size:13.5px;font-weight:500;color:var(--text-primary);line-height:1.3;}
+.sym-emoji{font-size:16px;}
+
+/* Progress bar */
+.bar-wrap{margin-top:14px;}
+.bar-labels{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:5px;}
+.bar-bg{background:var(--border);border-radius:100px;height:9px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:100px;transition:width 1s cubic-bezier(0.4,0,0.2,1);}
+.fill-green{background:linear-gradient(90deg,#2ECC71,#27AE60);}
+.fill-amber{background:linear-gradient(90deg,#F39C12,#E67E22);}
+.fill-red{background:linear-gradient(90deg,#E74C3C,#C0392B);}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 14px;border-radius:100px;font-size:12.5px;font-weight:700;letter-spacing:0.03em;}
+.badge-green{background:#d5f5e3;color:#1a8a47;} .badge-amber{background:#fef3cd;color:#9a6600;} .badge-red{background:#fde8e6;color:#c0392b;} .badge-blue{background:#dbeeff;color:#1a5fa8;}
+
+/* Probability display */
+.prob-display{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:18px;}
+.prob-number{font-family:'Space Grotesk',sans-serif;font-size:52px;font-weight:700;color:var(--navy-dark);line-height:1;}
+.prob-label{font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+
+/* Rash scanner */
+.upload-zone{border:2.5px dashed var(--border);border-radius:16px;padding:56px 36px;text-align:center;cursor:pointer;transition:all 0.25s;background:var(--bg);}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--teal);background:#f0faf7;}
+.upload-icon-big{font-size:44px;margin-bottom:14px;}
+.upload-zone h3{font-size:17px;font-weight:700;color:var(--navy);margin-bottom:5px;}
+.upload-zone p{font-size:13.5px;color:var(--text-muted);}
+.scan-result-area{display:none;margin-top:22px;padding:22px;border-radius:14px;background:var(--bg);border:1.5px solid var(--border);}
+.scan-result-area.show{display:flex;gap:22px;flex-wrap:wrap;animation:fadeUp 0.4s ease;}
+.scan-img-box img{width:155px;height:155px;object-fit:cover;border-radius:12px;border:3px solid var(--border);}
+.scan-info{flex:1;min-width:200px;}
+.scan-class{font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:var(--navy-dark);margin:6px 0 14px;}
+
+/* Map */
+#hotspot-map{height:420px;}
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:15px;margin-top:22px;}
+.region-card{background:#fff;border-radius:14px;padding:18px;box-shadow:var(--shadow);}
+.region-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.region-name{font-weight:700;font-size:15px;color:var(--navy-dark);}
+.risk-pill{font-size:10.5px;font-weight:700;padding:3px 11px;border-radius:100px;text-transform:uppercase;letter-spacing:0.06em;}
+.pill-high{background:var(--red);color:#fff;} .pill-med{background:var(--amber);color:#fff;} .pill-low{background:var(--green);color:#fff;}
+.region-stats{display:flex;justify-content:space-between;}
+.stat-label{font-size:12px;color:var(--text-muted);font-weight:500;margin-bottom:2px;}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;color:var(--text-primary);}
+
+/* Analytics */
+.analytics-top{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;}
+.stat-banner{background:var(--gradient);border-radius:16px;padding:26px;color:#fff;position:relative;overflow:hidden;}
+.stat-banner::after{content:'';position:absolute;right:-18px;bottom:-18px;width:90px;height:90px;background:rgba(255,255,255,0.06);border-radius:50%;}
+.stat-banner-label{font-size:12.5px;color:rgba(255,255,255,0.68);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:7px;}
+.stat-banner-val{font-family:'Space Grotesk',sans-serif;font-size:50px;font-weight:700;line-height:1;margin-bottom:12px;}
+.stat-prog-bg{background:rgba(255,255,255,0.2);border-radius:100px;height:5px;}
+.stat-prog-fill{background:rgba(255,255,255,0.82);border-radius:100px;height:5px;transition:width 1.5s ease;}
+.stat-gap{font-size:13.5px;color:rgba(255,255,255,0.7);margin-top:9px;}
+.chart-card{background:#fff;border-radius:14px;padding:22px;box-shadow:var(--shadow);margin-bottom:22px;}
+.chart-title{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;color:var(--navy-dark);margin-bottom:18px;}
+
+/* Medical disclaimer */
+.disclaimer{background:#eff8ff;border:1.5px solid #bee3f8;border-radius:12px;padding:15px 18px;margin-top:18px;font-size:13px;color:#2d6a9f;line-height:1.6;}
+.disclaimer strong{font-weight:700;}
+
+/* Spinner */
+.spinner{display:inline-block;width:16px;height:16px;border:2.5px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* Toast */
+.toasts{position:fixed;top:70px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:9px;pointer-events:none;}
+.toast{background:var(--navy-dark);color:#fff;padding:12px 18px;border-radius:12px;font-size:13.5px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.25);display:flex;align-items:center;gap:9px;animation:toastIn 0.35s ease;pointer-events:all;border-left:4px solid var(--teal);max-width:310px;}
+.toast.err{border-left-color:var(--red);}
+.toast.warn{border-left-color:var(--amber);}
+@keyframes toastIn{from{opacity:0;transform:translateX(28px);}to{opacity:1;transform:translateX(0);}}
+
+/* Loader overlay */
+.loading-overlay{position:fixed;inset:0;background:rgba(7,29,53,0.55);z-index:9998;display:flex;align-items:center;justify-content:center;display:none;}
+.loading-overlay.show{display:flex;}
+.loading-box{background:#fff;border-radius:16px;padding:36px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+.loading-box p{margin-top:14px;font-weight:600;color:var(--navy);font-size:15px;}
+.loading-box small{color:var(--text-muted);font-size:13px;}
+.big-spinner{width:44px;height:44px;border:4px solid #e8ecf0;border-top-color:var(--teal);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto;}
+
+/* Diff badges row */
+.diff-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px;}
+
+/* Responsive */
+@media(max-width:768px){
+  .nav-link span{display:none;}
+  .input-grid{grid-template-columns:1fr;}
+  .risk-factors-grid{grid-template-columns:1fr 1fr;}
+  .analytics-top{grid-template-columns:1fr;}
+  .hero-feature-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:480px){
+  .hero-feature-grid{grid-template-columns:1fr;}
+  .hero-btns{flex-direction:column;align-items:center;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo" onclick="goPage('home')">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1ABC9C" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Measles AI Sentinel
+    <div class="pulse"></div>
+  </div>
+  <div class="nav-links">
+    <button class="nav-link active" id="nav-home" onclick="goPage('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>Home</span>
+    </button>
+    <button class="nav-link" id="nav-risk" onclick="goPage('risk')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Risk Prediction</span>
+    </button>
+    <button class="nav-link" id="nav-symptom" onclick="goPage('symptom')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>Symptom Checker</span>
+    </button>
+    <button class="nav-link" id="nav-rash" onclick="goPage('rash')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg><span>Rash Scanner</span>
+    </button>
+    <button class="nav-link" id="nav-map" onclick="goPage('map')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Hotspot Map</span>
+    </button>
+    <button class="nav-link" id="nav-analytics" onclick="goPage('analytics')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span>
+    </button>
+  </div>
+</nav>
+
+<!-- TOAST CONTAINER -->
+<div class="toasts" id="toasts"></div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="big-spinner"></div>
+    <p id="loadingMsg">Analyzing with Gemini AI...</p>
+    <small>This may take a few seconds</small>
+  </div>
+</div>
+
+<!-- ═══════════ HOME ═══════════ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-grid-bg"></div>
+    <div class="hero-badge">🔬 AI-Powered Outbreak Intelligence Platform</div>
+    <h1>AI-Powered Measles<br><span>Outbreak Intelligence</span></h1>
+    <p>Detect outbreaks early. Analyze symptoms. Protect communities with real-time Gemini AI sentinel monitoring.</p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="goPage('symptom')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Start Symptom Check
+      </button>
+      <button class="btn-outline" onclick="goPage('rash')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Upload Rash Image
+      </button>
+      <button class="btn-outline" onclick="goPage('map')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/></svg>
+        View Outbreak Map
+      </button>
+    </div>
+    <div class="hero-feature-grid">
+      <div class="hero-feat" onclick="goPage('risk')">
+        <div class="feat-icon">📊</div>
+        <h3>Early Outbreak Prediction</h3>
+        <p>ML models predict risk before symptoms appear using vaccination & demographic data</p>
+      </div>
+      <div class="hero-feat" onclick="goPage('symptom')">
+        <div class="feat-icon">🔬</div>
+        <h3>Symptom AI Detection</h3>
+        <p>Gemini AI calculates measles probability from symptoms with clinical reasoning</p>
+      </div>
+      <div class="hero-feat" onclick="goPage('rash')">
+        <div class="feat-icon">📷</div>
+        <h3>Rash Image Scanner</h3>
+        <p>Upload rash photos for instant Gemini Vision classification and differential diagnosis</p>
+      </div>
+      <div class="hero-feat" onclick="goPage('map')">
+        <div class="feat-icon">🗺️</div>
+        <h3>Hotspot Mapping</h3>
+        <p>Live outbreak risk maps with regional vaccination and case data overlays</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="how-section">
+    <h2>How It Works</h2>
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-num">1</div>
+        <h3>Input Data</h3>
+        <p>Submit symptoms or upload rash images to the system</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">2</div>
+        <h3>Gemini AI Analysis</h3>
+        <p>Google Gemini analyzes patterns against outbreak intelligence data</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">3</div>
+        <h3>Get Results</h3>
+        <p>Receive instant risk scores, clinical guidance, and action plans</p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div><h4>Measles AI Sentinel</h4><p>AI-powered outbreak detection and prevention platform<br>Powered by Google Gemini AI + FastAPI</p></div>
+    <div><h4>Disclaimer</h4><p>This system provides informational guidance only and<br>does not replace professional medical diagnosis.</p></div>
+    <div class="footer-copy">© 2026 Measles AI Intelligence System. All rights reserved.</div>
+  </footer>
+</div>
+
+<!-- ═══════════ RISK PREDICTION ═══════════ -->
+<div class="page" id="page-risk">
+  <div class="dash-wrap">
+    <h1 class="dash-title">Measles AI Sentinel Dashboard</h1>
+    <p class="dash-sub">AI-Powered Outbreak Intelligence & Detection</p>
+
+    <div id="alerts-risk">
+      <div class="alert-card">
+        <span style="font-size:18px;">⚠️</span>
+        <div>
+          <div class="alert-title">Outbreak Warning</div>
+          <div class="alert-msg">High measles outbreak probability detected in Downtown Metro area</div>
+          <div class="alert-region">Downtown Metro</div>
+        </div>
+        <button class="alert-close" onclick="this.closest('.alert-card').remove()">✕</button>
+      </div>
+      <div class="alert-card warn">
+        <span style="font-size:18px;">⚠️</span>
+        <div>
+          <div class="alert-title">Vaccination Alert</div>
+          <div class="alert-msg">Vaccination coverage below target in South Bay region</div>
+          <div class="alert-region">South Bay</div>
+        </div>
+        <button class="alert-close" onclick="this.closest('.alert-card').remove()">✕</button>
+      </div>
+    </div>
+
+    <div style="margin-top:18px;">
+      <div class="sec-hdr">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Pre-Symptom Risk Prediction
+      </div>
+      <div class="sec-body">
+        <div class="input-grid">
+          <div><label>Vaccination Rate (%)</label><input type="number" id="vax-rate" value="76" min="0" max="100" class="form-input"></div>
+          <div><label>Population Density (per km²)</label><input type="number" id="pop-density" value="850" min="1" class="form-input"></div>
+          <div><label>Recent Cases (30 days)</label><input type="number" id="recent-cases" value="12" min="0" class="form-input"></div>
+          <div><label>Season</label>
+            <select id="season" class="form-input">
+              <option>Spring (High Risk)</option>
+              <option>Summer (Medium Risk)</option>
+              <option selected>Winter (High Risk)</option>
+              <option>Autumn (Low Risk)</option>
+            </select>
+          </div>
+          <div><label>Region Type</label>
+            <select id="region-type" class="form-input">
+              <option>Urban Metro</option>
+              <option selected>Suburban</option>
+              <option>Rural</option>
+            </select>
+          </div>
+          <div><label>Travel Activity</label>
+            <select id="travel" class="form-input">
+              <option>High (International)</option>
+              <option selected>Medium (Regional)</option>
+              <option>Low (Local)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="btn-teal" id="risk-btn" onclick="runRiskPrediction()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Run AI Risk Prediction
+        </button>
+
+        <div id="risk-result" style="display:none;margin-top:22px;">
+          <div class="gauge-area">
+            <div class="gauge-svg-wrap">
+              <svg class="gauge-svg" viewBox="0 0 200 122">
+                <defs>
+                  <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#2ECC71"/>
+                    <stop offset="50%" style="stop-color:#F39C12"/>
+                    <stop offset="100%" style="stop-color:#E74C3C"/>
+                  </linearGradient>
+                </defs>
+                <path d="M18 102 A82 82 0 0 1 182 102" fill="none" stroke="#e8ecf0" stroke-width="20" stroke-linecap="round"/>
+                <path id="gauge-arc" d="M18 102 A82 82 0 0 1 182 102" fill="none" stroke="url(#gGrad)" stroke-width="20" stroke-linecap="round" stroke-dasharray="0 257"/>
+                <text x="100" y="88" text-anchor="middle" font-family="Space Grotesk,sans-serif" font-size="30" font-weight="700" fill="#0A1929" id="gauge-txt">0</text>
+                <text x="100" y="108" text-anchor="middle" font-family="DM Sans,sans-serif" font-size="11" fill="#8098B0">RISK SCORE / 100</text>
+              </svg>
+              <div style="text-align:center;margin-top:4px;" id="risk-level-badge"></div>
+            </div>
+            <div class="risk-factors-grid">
+              <div class="rf-card"><div class="rf-label">Vax Gap</div><div class="rf-val c-amber" id="rf-vax">—</div></div>
+              <div class="rf-card"><div class="rf-label">Case Load</div><div class="rf-val c-red" id="rf-cases">—</div></div>
+              <div class="rf-card"><div class="rf-label">Herd Immunity</div><div class="rf-val c-amber" id="rf-herd">—</div></div>
+              <div class="rf-card"><div class="rf-label">Alert Level</div><div class="rf-val" id="rf-alert">—</div></div>
+              <div class="rf-card"><div class="rf-label">Seasonal</div><div class="rf-val c-amber" id="rf-season">—</div></div>
+              <div class="rf-card"><div class="rf-label">R0 Impact</div><div class="rf-val c-red" id="rf-r0">High</div></div>
+            </div>
+          </div>
+
+          <div class="ai-box show" id="risk-ai-box">
+            <div class="ai-box-hdr">🤖 Gemini AI — Outbreak Risk Intelligence</div>
+            <div id="risk-ai-content" class="ai-box-content">Analyzing...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SYMPTOM CHECKER ═══════════ -->
+<div class="page" id="page-symptom">
+  <div class="dash-wrap">
+    <h1 class="dash-title">AI Symptom Checker</h1>
+    <p class="dash-sub">Select all symptoms you're experiencing — Gemini AI will assess measles probability</p>
+
+    <div class="sec-hdr">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Symptom Assessment
+    </div>
+    <div class="sec-body">
+      <p style="font-size:13.5px;color:var(--text-secondary);margin-bottom:2px;">Select all symptoms present in the last 7 days:</p>
+      <div class="symptom-grid" id="symptom-grid">
+        <label class="sym-item"><span class="sym-emoji">🌡️</span><input type="checkbox" value="fever" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>High Fever (&gt;38.5°C)</span></label>
+        <label class="sym-item"><span class="sym-emoji">😤</span><input type="checkbox" value="cough" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Persistent Cough</span></label>
+        <label class="sym-item"><span class="sym-emoji">👁️</span><input type="checkbox" value="red_eyes" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Red / Watery Eyes</span></label>
+        <label class="sym-item"><span class="sym-emoji">🤧</span><input type="checkbox" value="runny_nose" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Runny Nose</span></label>
+        <label class="sym-item"><span class="sym-emoji">🔴</span><input type="checkbox" value="rash" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Skin Rash</span></label>
+        <label class="sym-item"><span class="sym-emoji">😩</span><input type="checkbox" value="fatigue" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Fatigue / Malaise</span></label>
+        <label class="sym-item"><span class="sym-emoji">💊</span><input type="checkbox" value="koplik" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>White Mouth Spots</span></label>
+        <label class="sym-item"><span class="sym-emoji">😣</span><input type="checkbox" value="sensitivity" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Light Sensitivity</span></label>
+        <label class="sym-item"><span class="sym-emoji">🦷</span><input type="checkbox" value="sore_throat" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Sore Throat</span></label>
+        <label class="sym-item"><span class="sym-emoji">🤢</span><input type="checkbox" value="vomiting" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Nausea / Vomiting</span></label>
+        <label class="sym-item"><span class="sym-emoji">🦴</span><input type="checkbox" value="body_pain" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Body / Muscle Pain</span></label>
+        <label class="sym-item"><span class="sym-emoji">🧠</span><input type="checkbox" value="headache" onchange="this.closest('.sym-item').classList.toggle('checked',this.checked)"><span>Severe Headache</span></label>
+      </div>
+
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin:14px 0;">
+        <div>
+          <label style="font-size:13.5px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Duration of symptoms</label>
+          <select id="sym-duration" class="form-input" style="width:auto;padding:9px 13px;">
+            <option>Less than 24 hours</option>
+            <option selected>1-3 days</option>
+            <option>4-7 days</option>
+            <option>More than 7 days</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:13.5px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Exposure history</label>
+          <select id="sym-exposure" class="form-input" style="width:auto;padding:9px 13px;">
+            <option>No known exposure</option>
+            <option>Possible exposure</option>
+            <option>Confirmed exposure</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:13.5px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Age group</label>
+          <select id="sym-age" class="form-input" style="width:auto;padding:9px 13px;">
+            <option>Child (0-12)</option>
+            <option>Teen (13-17)</option>
+            <option selected>Adult (18-60)</option>
+            <option>Senior (60+)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:13.5px;font-weight:600;color:var(--text-secondary);display:block;margin-bottom:6px;">Vaccination status</label>
+          <select id="sym-vax" class="form-input" style="width:auto;padding:9px 13px;">
+            <option>Vaccinated (both doses)</option>
+            <option>Partially vaccinated</option>
+            <option>Unvaccinated</option>
+            <option selected>Unknown</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-teal" id="sym-btn" onclick="analyzeSymptoms()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Analyze with Gemini AI
+      </button>
+
+      <div id="sym-result" style="display:none;margin-top:22px;">
+        <div class="prob-display">
+          <div>
+            <div class="prob-label">Measles Probability</div>
+            <div class="prob-number" id="prob-num">--</div>
+          </div>
+          <div id="prob-badge"></div>
+          <div id="contagion-badge"></div>
+        </div>
+        <div class="bar-wrap">
+          <div class="bar-labels"><span>Infection Probability</span><span id="bar-pct">0%</span></div>
+          <div class="bar-bg"><div class="bar-fill" id="prob-bar" style="width:0%"></div></div>
+        </div>
+        <div class="ai-box show" style="margin-top:16px;">
+          <div class="ai-box-hdr">🤖 Gemini AI — Clinical Assessment</div>
+          <div id="sym-ai-content" class="ai-box-content">Analyzing...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ RASH SCANNER ═══════════ -->
+<div class="page" id="page-rash">
+  <div class="dash-wrap">
+    <h1 class="dash-title">Rash Image Scanner</h1>
+    <p class="dash-sub">Upload a rash photo — Gemini Vision AI will classify and provide clinical guidance</p>
+
+    <div class="alert-card warn" style="margin-bottom:16px;">
+      <span style="font-size:18px;">⚠️</span>
+      <div>
+        <div class="alert-title">Vaccination Alert</div>
+        <div class="alert-msg">Vaccination coverage below target in South Bay region</div>
+        <div class="alert-region">South Bay</div>
+      </div>
+      <button class="alert-close" onclick="this.closest('.alert-card').remove()">✕</button>
+    </div>
+
+    <div class="sec-hdr">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Rash Image Scanner
+    </div>
+    <div class="sec-body">
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('rash-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <input type="file" id="rash-input" accept="image/*" style="display:none" onchange="handleRashFile(event)">
+        <div class="upload-icon-big">📤</div>
+        <h3>Upload rash image or take a photo</h3>
+        <p>Click to select or drag and drop · JPG, PNG, WEBP supported</p>
+      </div>
+
+      <div class="scan-result-area" id="scan-result">
+        <div class="scan-img-box">
+          <img id="scan-preview" src="" alt="Rash preview">
+        </div>
+        <div class="scan-info">
+          <div style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">AI Classification</div>
+          <div class="scan-class" id="scan-class">Analyzing...</div>
+          <div id="scan-badges" style="margin-bottom:14px;"></div>
+          <div class="bar-wrap">
+            <div class="bar-labels"><span>Confidence Score</span><span id="scan-conf-pct">0%</span></div>
+            <div class="bar-bg"><div class="bar-fill fill-amber" id="scan-conf-bar" style="width:0%"></div></div>
+          </div>
+          <div style="margin-top:12px;">
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:7px;">Differential Diagnoses</div>
+            <div class="diff-row" id="diff-row"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-box" id="rash-ai-box">
+        <div class="ai-box-hdr">🤖 Gemini Vision AI — Dermatology Analysis</div>
+        <div id="rash-ai-content" class="ai-box-content">Upload an image to begin Gemini AI analysis...</div>
+      </div>
+
+      <div class="disclaimer">
+        <strong>Medical Disclaimer:</strong> This system provides informational guidance only and does not replace professional medical diagnosis. Always consult with a healthcare provider for medical advice.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ HOTSPOT MAP ═══════════ -->
+<div class="page" id="page-map">
+  <div class="dash-wrap">
+    <h1 class="dash-title">Measles AI Sentinel Dashboard</h1>
+    <p class="dash-sub">AI-Powered Outbreak Intelligence & Detection</p>
+
+    <div class="alert-card" style="margin-bottom:11px;">
+      <span style="font-size:18px;">⚠️</span>
+      <div><div class="alert-title">Outbreak Warning</div><div class="alert-msg">High measles outbreak probability detected in Downtown Metro area</div><div class="alert-region">Downtown Metro</div></div>
+      <button class="alert-close" onclick="this.closest('.alert-card').remove()">✕</button>
+    </div>
+    <div class="alert-card warn" style="margin-bottom:18px;">
+      <span style="font-size:18px;">⚠️</span>
+      <div><div class="alert-title">Vaccination Alert</div><div class="alert-msg">Vaccination coverage below target in South Bay region</div><div class="alert-region">South Bay</div></div>
+      <button class="alert-close" onclick="this.closest('.alert-card').remove()">✕</button>
+    </div>
+
+    <div class="sec-hdr">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Outbreak Hotspot Map
+    </div>
+    <div style="background:#fff;padding:11px 20px;display:flex;gap:20px;flex-wrap:wrap;border-top:1px solid var(--border);box-shadow:var(--shadow);">
+      <span style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:50%;background:var(--green);display:inline-block;"></span>Low Risk</span>
+      <span style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:50%;background:var(--amber);display:inline-block;"></span>Medium Risk</span>
+      <span style="font-size:13px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;"><span style="width:11px;height:11px;border-radius:50%;background:var(--red);display:inline-block;"></span>High Risk</span>
+    </div>
+    <div id="hotspot-map"></div>
+
+    <h2 style="font-family:'Space Grotesk',sans-serif;font-size:21px;font-weight:700;color:var(--navy-dark);margin:26px 0 14px;">Region Details</h2>
+    <div class="region-grid" id="region-grid">
+      <!-- Populated from API -->
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ANALYTICS ═══════════ -->
+<div class="page" id="page-analytics">
+  <div class="dash-wrap">
+    <h1 class="dash-title">Vaccination Analytics</h1>
+    <p class="dash-sub">Regional coverage data, infection trends, and outbreak risk evolution</p>
+
+    <div class="analytics-top">
+      <div class="stat-banner">
+        <div class="stat-banner-label">Overall Coverage</div>
+        <div class="stat-banner-val" id="overall-cov">76.0%</div>
+        <div class="stat-prog-bg"><div class="stat-prog-fill" id="cov-bar" style="width:76%"></div></div>
+      </div>
+      <div class="stat-banner">
+        <div class="stat-banner-label">Target Coverage</div>
+        <div class="stat-banner-val">95%</div>
+        <div class="stat-prog-bg"><div class="stat-prog-fill" style="width:95%"></div></div>
+        <div class="stat-gap" id="cov-gap">Gap: 19.0%</div>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Regional Coverage vs Cases</div>
+      <canvas id="barChart" height="260"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Coverage Trend Over Time</div>
+      <canvas id="lineChart" height="260"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Outbreak Risk Score by Region</div>
+      <canvas id="radarChart" height="260"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ JS ═══════════ -->
+<script>
+const API_BASE = "http://localhost:8000/api";
+
+// ─── PAGE NAVIGATION ─────────────────────────────────────────────────────────
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  const navEl = document.getElementById('nav-' + id);
+  if(navEl) navEl.classList.add('active');
+  window.scrollTo(0, 0);
+  if(id === 'map') initMap();
+  if(id === 'analytics') loadAnalytics();
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok') {
+  const tc = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type === 'err' ? 'err' : type === 'warn' ? 'warn' : ''}`;
+  const icons = {ok:'✅', warn:'⚠️', err:'🔴'};
+  t.innerHTML = `<span>${icons[type]||'🔔'}</span><span>${msg}</span>`;
+  tc.appendChild(t);
+  setTimeout(() => t.remove(), 5000);
+}
+
+// ─── LOADING ──────────────────────────────────────────────────────────────────
+function showLoading(msg='Analyzing with Gemini AI...') {
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+// ─── API CALL ─────────────────────────────────────────────────────────────────
+async function apiPost(endpoint, body) {
+  const res = await fetch(API_BASE + endpoint, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// ─── RISK PREDICTION ──────────────────────────────────────────────────────────
+async function runRiskPrediction() {
+  const btn = document.getElementById('risk-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Running Gemini Analysis...`;
+  showLoading('Gemini AI is calculating outbreak risk...');
+
+  try {
+    const payload = {
+      vaccination_rate: parseFloat(document.getElementById('vax-rate').value) || 76,
+      population_density: parseFloat(document.getElementById('pop-density').value) || 850,
+      recent_cases: parseInt(document.getElementById('recent-cases').value) || 12,
+      season: document.getElementById('season').value,
+      region_type: document.getElementById('region-type').value,
+      travel_activity: document.getElementById('travel').value
+    };
+
+    const data = await apiPost('/predict-risk', payload);
+    hideLoading();
+
+    if(!data.success) throw new Error('API returned failure');
+
+    const ai = data.ai_analysis;
+    document.getElementById('risk-result').style.display = 'block';
+
+    // Animate gauge
+    animateGauge(data.risk_score);
+
+    // Fill factor cards
+    document.getElementById('rf-vax').textContent = data.vaccination_gap + '%';
+    setColorClass('rf-vax', data.vaccination_gap > 20 ? 'c-red' : data.vaccination_gap > 10 ? 'c-amber' : 'c-green');
+    document.getElementById('rf-cases').textContent = payload.recent_cases;
+    setColorClass('rf-cases', payload.recent_cases > 20 ? 'c-red' : 'c-amber');
+    document.getElementById('rf-herd').textContent = ai.herd_immunity_status || '—';
+    setColorClass('rf-herd', ai.herd_immunity_status === 'ACHIEVED' ? 'c-green' : 'c-red');
+    const alertEl = document.getElementById('rf-alert');
+    alertEl.textContent = ai.alert_level || '—';
+    alertEl.className = 'rf-val ' + alertLevelColor(ai.alert_level);
+    document.getElementById('rf-season').textContent = payload.season.includes('High') ? 'High' : 'Med';
+    document.getElementById('rf-r0').textContent = ai.estimated_r0_impact ? ai.estimated_r0_impact.substring(0, 8) + '...' : 'High';
+
+    // Risk level badge
+    const lvlColors = {LOW:'badge-green',MODERATE:'badge-amber',HIGH:'badge-red',CRITICAL:'badge-red'};
+    document.getElementById('risk-level-badge').innerHTML = `<span class="badge ${lvlColors[ai.risk_level] || 'badge-amber'}">${ai.risk_level || 'UNKNOWN'}</span>`;
+
+    // Render AI content
+    renderRiskAI(ai);
+    toast(`Risk Score: ${data.risk_score}/100 — ${ai.risk_level || 'Analysis complete'}`, data.risk_score > 60 ? 'err' : 'ok');
+
+  } catch(e) {
+    hideLoading();
+    toast('API Error: ' + e.message + ' — Is the backend running?', 'err');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Run AI Risk Prediction`;
+}
+
+function alertLevelColor(lvl) {
+  const map = {GREEN:'c-green', YELLOW:'c-amber', ORANGE:'c-amber', RED:'c-red'};
+  return map[lvl] || 'c-amber';
+}
+
+function setColorClass(id, cls) {
+  const el = document.getElementById(id);
+  el.className = 'rf-val ' + cls;
+}
+
+function renderRiskAI(ai) {
+  const c = document.getElementById('risk-ai-content');
+  c.innerHTML = `
+    <div class="ai-section">
+      <div class="ai-section-title">📋 Summary</div>
+      <div class="ai-section-body">${ai.summary || '—'}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">⚠️ Primary Risk Factors</div>
+      <div class="ai-section-body">${(ai.primary_risk_factors||[]).map(f=>`• ${f}`).join('<br>')}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">💉 Vaccination Gap Analysis</div>
+      <div class="ai-section-body">${ai.vaccination_gap_analysis || '—'}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">✅ Recommended Actions</div>
+      <div class="ai-section-body">${(ai.recommended_actions||[]).map((a,i)=>`${i+1}. ${a}`).join('<br>')}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">⏱️ Time to Outbreak (if unaddressed)</div>
+      <div class="ai-section-body">${ai.time_to_outbreak || '—'}</div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-muted);font-style:italic;">${ai.disclaimer || ''}</div>`;
+}
+
+function animateGauge(score) {
+  const arc = document.getElementById('gauge-arc');
+  const txt = document.getElementById('gauge-txt');
+  const maxDash = 257;
+  const target = (score / 100) * maxDash;
+  let cur = 0;
+  const step = target / 45;
+  const iv = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    arc.setAttribute('stroke-dasharray', `${cur} ${maxDash - cur}`);
+    txt.textContent = Math.round((cur / maxDash) * 100);
+    if(cur >= target) clearInterval(iv);
+  }, 14);
+}
+
+// ─── SYMPTOM ANALYSIS ────────────────────────────────────────────────────────
+async function analyzeSymptoms() {
+  const checked = [...document.querySelectorAll('#symptom-grid input:checked')].map(i => i.value);
+  if(!checked.length) { toast('Please select at least one symptom', 'warn'); return; }
+
+  const btn = document.getElementById('sym-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<div class="spinner"></div> Analyzing with Gemini...`;
+  showLoading('Gemini AI is assessing your symptoms...');
+
+  try {
+    const payload = {
+      symptoms: checked,
+      duration: document.getElementById('sym-duration').value,
+      exposure_history: document.getElementById('sym-exposure').value,
+      age_group: document.getElementById('sym-age').value,
+      vaccination_status: document.getElementById('sym-vax').value
+    };
+
+    const data = await apiPost('/analyze-symptoms', payload);
+    hideLoading();
+
+    if(!data.success) throw new Error('API returned failure');
+
+    const ai = data.ai_analysis;
+    const prob = data.probability;
+
+    document.getElementById('sym-result').style.display = 'block';
+    document.getElementById('prob-num').textContent = prob + '%';
+    document.getElementById('bar-pct').textContent = prob + '%';
+
+    const bar = document.getElementById('prob-bar');
+    bar.className = 'bar-fill ' + (prob > 65 ? 'fill-red' : prob > 35 ? 'fill-amber' : 'fill-green');
+    setTimeout(() => bar.style.width = prob + '%', 50);
+
+    const levelMap = {HIGH:{cls:'badge-red',lbl:'HIGH RISK'}, MODERATE:{cls:'badge-amber',lbl:'MODERATE RISK'}, LOW:{cls:'badge-green',lbl:'LOW RISK'}};
+    const lvl = levelMap[ai.confidence_level] || levelMap['MODERATE'];
+    document.getElementById('prob-badge').innerHTML = `<span class="badge ${lvl.cls}">${lvl.lbl}</span>`;
+
+    const conMap = {HIGH:'badge-red', MODERATE:'badge-amber', LOW:'badge-green'};
+    document.getElementById('contagion-badge').innerHTML = ai.contagion_risk ? `<span class="badge ${conMap[ai.contagion_risk]||'badge-amber'}">Contagion: ${ai.contagion_risk}</span>` : '';
+
+    renderSymptomAI(ai);
+    toast(`Measles probability: ${prob}% — ${ai.confidence_level||''} confidence`, prob > 65 ? 'err' : prob > 35 ? 'warn' : 'ok');
+
+  } catch(e) {
+    hideLoading();
+    toast('API Error: ' + e.message + ' — Is the backend running?', 'err');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Analyze with Gemini AI`;
+}
+
+function renderSymptomAI(ai) {
+  const c = document.getElementById('sym-ai-content');
+  const diffs = (ai.differential_diagnoses||[]).map(d => 
+    `<span class="ai-tag tag-blue">${d.condition} (${d.probability}%)</span>`).join('');
+  c.innerHTML = `
+    <div class="ai-section">
+      <div class="ai-section-title">🩺 Clinical Assessment</div>
+      <div class="ai-section-body">${ai.clinical_assessment || '—'}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">🔑 Key Diagnostic Indicators</div>
+      <div class="ai-section-body">${(ai.key_diagnostic_indicators||[]).map(k=>`• ${k}`).join('<br>')}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">🔄 Differential Diagnoses</div>
+      <div class="ai-section-body">${diffs || '—'}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">🚨 Immediate Actions</div>
+      <div class="ai-section-body">${(ai.immediate_actions||[]).map((a,i)=>`${i+1}. ${a}`).join('<br>')}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">🏠 Isolation Guidance</div>
+      <div class="ai-section-body">${ai.isolation_guidance || '—'}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">💊 Medication & Vitamin Guidance</div>
+      <div class="ai-section-body">${ai.medication_guidance || '—'}<br><em>${ai.vitamin_guidance || ''}</em></div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">⚠️ When to Seek Emergency Care</div>
+      <div class="ai-section-body" style="color:var(--red);">${ai.when_to_seek_emergency_care || '—'}</div>
+    </div>
+    <div style="margin-top:12px;font-size:12px;color:var(--text-muted);font-style:italic;">${ai.disclaimer || ''}</div>`;
+}
+
+// ─── RASH SCANNER ─────────────────────────────────────────────────────────────
+function handleDragOver(e) { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag'); }
+function handleDragLeave() { document.getElementById('upload-zone').classList.remove('drag'); }
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if(file && file.type.startsWith('image/')) processRashFile(file);
+}
+function handleRashFile(e) { if(e.target.files[0]) processRashFile(e.target.files[0]); }
+
+async function processRashFile(file) {
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('scan-preview').src = e.target.result;
+    document.getElementById('scan-result').classList.add('show');
+    document.getElementById('scan-class').textContent = 'Analyzing with Gemini Vision...';
+  };
+  reader.readAsDataURL(file);
+
+  showLoading('Gemini Vision AI is analyzing your rash image...');
+
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(API_BASE + '/scan-rash', { method:'POST', body: formData });
+    if(!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.detail || `HTTP ${res.status}`); }
+    const data = await res.json();
+    hideLoading();
+
+    if(!data.success) throw new Error('Scan failed');
+
+    const ai = data.ai_analysis;
+
+    document.getElementById('scan-class').textContent = ai.primary_classification || 'Unclassified Rash';
+    document.getElementById('rash-ai-box').classList.add('show');
+
+    // Confidence bar
+    const conf = ai.confidence_score || 75;
+    document.getElementById('scan-conf-pct').textContent = conf + '%';
+    const confBar = document.getElementById('scan-conf-bar');
+    confBar.className = 'bar-fill ' + (conf > 70 ? 'fill-red' : conf > 50 ? 'fill-amber' : 'fill-green');
+    setTimeout(() => confBar.style.width = conf + '%', 100);
+
+    // Badges
+    const isHighRisk = (ai.primary_classification||'').toLowerCase().includes('measles');
+    const urgentBadge = ai.urgent_care_recommended ? `<span class="badge badge-red">🚨 URGENT CARE</span>` : '';
+    document.getElementById('scan-badges').innerHTML = `
+      <span class="badge ${isHighRisk ? 'badge-red' : 'badge-amber'}">${ai.measles_likelihood || 'REQUIRES EVAL'}</span>
+      ${urgentBadge}
+      <span class="badge badge-blue">Quality: ${ai.image_quality||'—'}</span>`;
+
+    // Differential
+    const diffs = (ai.differential_diagnoses||[]).slice(0,3);
+    document.getElementById('diff-row').innerHTML = diffs.map(d =>
+      `<span class="ai-tag tag-blue">${d.condition} (${d.confidence}%)</span>`).join('');
+
+    renderRashAI(ai);
+    toast(`Classified: ${ai.primary_classification} — ${conf}% confidence`, isHighRisk ? 'err' : 'warn');
+
+  } catch(e) {
+    hideLoading();
+    toast('Scan Error: ' + e.message, 'err');
+    document.getElementById('rash-ai-content').textContent = 'Error: ' + e.message;
+  }
+}
+
+function renderRashAI(ai) {
+  const c = document.getElementById('rash-ai-content');
+  const steps = (ai.recommended_next_steps||[]).map((s,i)=>`${i+1}. ${s}`).join('<br>');
+  const features = (ai.visual_features_observed||[]).map(f=>`• ${f}`).join('<br>');
+  c.innerHTML = `
+    <div class="ai-section">
+      <div class="ai-section-title">🔍 Dermatological Assessment</div>
+      <div class="ai-section-body">${ai.dermatological_assessment || '—'}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">👁️ Visual Features Observed</div>
+      <div class="ai-section-body">${features || '—'}</div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">📊 Rash Characteristics</div>
+      <div class="ai-section-body">
+        <b>Distribution:</b> ${ai.rash_characteristics?.distribution||'—'}<br>
+        <b>Morphology:</b> ${ai.rash_characteristics?.morphology||'—'}<br>
+        <b>Color:</b> ${ai.rash_characteristics?.color||'—'}<br>
+        <b>Pattern:</b> ${ai.rash_characteristics?.pattern||'—'}
+      </div>
+    </div>
+    <div class="ai-section">
+      <div class="ai-section-title">🏥 Recommended Next Steps</div>
+      <div class="ai-section-body">${steps || '—'}</div>
+    </div>
+    ${ai.urgency_reason ? `<div class="ai-section"><div class="ai-section-title" style="color:var(--red);">🚨 Urgency Reason</div><div class="ai-section-body" style="color:var(--red);">${ai.urgency_reason}</div></div>` : ''}
+    <div style="margin-top:12px;font-size:12px;color:var(--text-muted);font-style:italic;">${ai.disclaimer||''}</div>`;
+}
+
+// ─── MAP ──────────────────────────────────────────────────────────────────────
+let mapInited = false;
+async function initMap() {
+  if(mapInited) return; mapInited = true;
+
+  const map = L.map('hotspot-map').setView([40.73, -73.99], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  let regions;
+  try {
+    const res = await fetch(API_BASE + '/regional-data');
+    const data = await res.json();
+    regions = data.regions;
+    renderRegionCards(regions);
+  } catch(e) {
+    regions = [
+      {name:'Downtown Metro',lat:40.7128,lng:-74.006,risk:'high',cases:45,vaccination:65},
+      {name:'North District',lat:40.7831,lng:-73.9712,risk:'medium',cases:18,vaccination:78},
+      {name:'East Side',lat:40.7282,lng:-73.7949,risk:'low',cases:5,vaccination:89},
+      {name:'West End',lat:40.6892,lng:-74.1745,risk:'medium',cases:22,vaccination:72},
+      {name:'South Bay',lat:40.5795,lng:-74.1502,risk:'high',cases:38,vaccination:61},
+      {name:'Riverside Zone',lat:40.8448,lng:-73.8648,risk:'low',cases:3,vaccination:92},
+    ];
+    renderRegionCards(regions);
+  }
+
+  const colors = {high:'#E74C3C',medium:'#F39C12',low:'#2ECC71'};
+  const radii = {high:22000,medium:15000,low:10000};
+  regions.forEach(r => {
+    L.circle([r.lat,r.lng],{color:colors[r.risk],fillColor:colors[r.risk],fillOpacity:0.3,radius:radii[r.risk],weight:2})
+      .addTo(map).bindPopup(`<b>${r.name}</b><br>Risk: <b style="color:${colors[r.risk]}">${r.risk.toUpperCase()}</b><br>Cases: ${r.cases} | Vax: ${r.vaccination}%`);
+    L.circleMarker([r.lat,r.lng],{radius:9,color:'white',fillColor:colors[r.risk],fillOpacity:1,weight:2.5})
+      .addTo(map).bindPopup(`<b>${r.name}</b><br>Cases: ${r.cases} | Vax: ${r.vaccination}%`);
+  });
+}
+
+function renderRegionCards(regions) {
+  const g = document.getElementById('region-grid');
+  g.innerHTML = regions.map(r => {
+    const pill = r.risk === 'high' ? 'pill-high' : r.risk === 'medium' ? 'pill-med' : 'pill-low';
+    const label = r.risk.toUpperCase();
+    return `<div class="region-card">
+      <div class="region-top"><div class="region-name">${r.name}</div><span class="risk-pill ${pill}">${label}</span></div>
+      <div class="region-stats">
+        <div><div class="stat-label">Cases</div><div class="stat-val">${r.cases}</div></div>
+        <div><div class="stat-label">Vaccination</div><div class="stat-val">${r.vaccination}%</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────────────
+let chartsInited = false;
+async function loadAnalytics() {
+  if(chartsInited) return; chartsInited = true;
+
+  let data;
+  try {
+    const res = await fetch(API_BASE + '/regional-data');
+    data = await res.json();
+  } catch(e) {
+    data = {
+      regions:[
+        {name:'Region A',cases:5,vaccination:89,risk_score:18},
+        {name:'Region B',cases:21,vaccination:72,risk_score:52},
+        {name:'Region C',cases:45,vaccination:65,risk_score:78},
+        {name:'Region D',cases:17,vaccination:78,risk_score:45},
+        {name:'Region E',cases:11,vaccination:83,risk_score:32},
+      ],
+      overall_coverage:76,target_coverage:95,
+      trend:[
+        {month:'Jan',coverage:72,cases:38},{month:'Feb',coverage:74,cases:35},
+        {month:'Mar',coverage:74,cases:31},{month:'Apr',coverage:75,cases:28},{month:'May',coverage:76,cases:25}
+      ]
+    };
+  }
+
+  document.getElementById('overall-cov').textContent = data.overall_coverage + '%';
+  document.getElementById('cov-gap').textContent = `Gap: ${(data.target_coverage - data.overall_coverage).toFixed(1)}%`;
+  setTimeout(() => document.getElementById('cov-bar').style.width = data.overall_coverage + '%', 100);
+
+  const teal = '#1ABC9C', red = '#E74C3C', navy = '#0D3B6E';
+  const labels = data.regions.map(r => r.name.replace(' Zone','').replace(' District','').replace(' Metro','').replace(' Side','').replace(' End',''));
+
+  new Chart(document.getElementById('barChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Vaccination Coverage (%)',data:data.regions.map(r=>r.vaccination),backgroundColor:teal,borderRadius:6,borderSkipped:false},
+        {label:'Cases Reported',data:data.regions.map(r=>r.cases),backgroundColor:red,borderRadius:6,borderSkipped:false}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,grid:{color:'#f0f4f8'}},x:{grid:{display:false}}}}
+  });
+
+  new Chart(document.getElementById('lineChart'), {
+    type:'line',
+    data:{
+      labels:data.trend.map(t=>t.month),
+      datasets:[
+        {label:'Vaccination Coverage (%)',data:data.trend.map(t=>t.coverage),borderColor:teal,backgroundColor:'rgba(26,188,156,0.1)',fill:true,tension:0.4,pointBackgroundColor:teal,pointRadius:5,yAxisID:'y'},
+        {label:'Cases Reported',data:data.trend.map(t=>t.cases),borderColor:red,fill:false,tension:0.4,pointBackgroundColor:red,pointRadius:5,yAxisID:'y1'}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true,position:'left',grid:{color:'#f0f4f8'}},y1:{beginAtZero:true,position:'right',grid:{display:false}},x:{grid:{display:false}}}}
+  });
+
+  new Chart(document.getElementById('radarChart'), {
+    type:'radar',
+    data:{
+      labels,
+      datasets:[{label:'Risk Score (0-100)',data:data.regions.map(r=>r.risk_score||50),borderColor:navy,backgroundColor:'rgba(13,59,110,0.12)',pointBackgroundColor:navy,pointRadius:5,borderWidth:2}]
+    },
+    options:{responsive:true,scales:{r:{beginAtZero:true,max:100,grid:{color:'#e8ecf0'},ticks:{stepSize:20}}}}
+  });
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+goPage('home');
+// Simulated live alerts
+setTimeout(() => toast('🔴 Outbreak alert: Downtown Metro — 45 active cases', 'err'), 3500);
+setTimeout(() => toast('⚠️ South Bay vaccination: 61% (target 95%)', 'warn'), 7000);
+</script>
+</body>
+</html>
